@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pharmacy Queue System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <section class="login-screen" id="login-screen">
+      <div class="login-panel">
+        <div class="brand login-brand">
+          <div class="brand-mark">RX</div>
+          <div>
+            <p>ระบบห้องยา</p>
+            <span>Real-time Pharmacy Queue</span>
+          </div>
+        </div>
+
+        <div>
+          <p class="eyebrow">Secure Access</p>
+          <h1>เข้าสู่ระบบ</h1>
+          <p class="login-copy">กรุณาเข้าสู่ระบบก่อนใช้งานหน้าควบคุมคิวและหลังบ้าน</p>
+        </div>
+
+        <form class="login-form" id="login-form">
+          <label>
+            ชื่อผู้ใช้
+            <input id="username-input" autocomplete="username" value="nurse" />
+          </label>
+          <label>
+            รหัสผ่าน
+            <input id="password-input" type="password" autocomplete="current-password" value="1234" />
+          </label>
+          <button class="action primary login-submit" type="submit">เข้าสู่ระบบ</button>
+          <p class="login-error" id="login-error"></p>
+        </form>
+
+        <div class="demo-accounts">
+          <strong>บัญชีสำหรับเดโม</strong>
+          <span>nurse / 1234</span>
+          <span>manager / 1234</span>
+          <span>admin / 1234</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="app-shell is-hidden" id="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">RX</div>
+          <div>
+            <p>ระบบห้องยา</p>
+            <span>Real-time Queue</span>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="เมนูหลัก">
+          <button class="nav-item active" data-view="operation">พนักงานห้องยา</button>
+          <button class="nav-item" data-view="tv">หน้าจอผู้ป่วย</button>
+          <button class="nav-item" data-view="executive">ผู้บริหาร</button>
+          <button class="nav-item" data-view="admin">แอดมิน</button>
+        </nav>
+
+        <div class="signed-in-card">
+          <small>เข้าสู่ระบบโดย</small>
+          <strong id="signed-in-name">Nurse A</strong>
+          <span id="signed-in-role">พนักงานห้องยา</span>
+          <button id="logout-btn">ออกจากระบบ</button>
+        </div>
+
+        <div class="system-status">
+          <span class="pulse"></span>
+          <div>
+            <strong>Online</strong>
+            <small>รีเซ็ตคิวอัตโนมัติ 00:00 น.</small>
+          </div>
+        </div>
+      </aside>
+
+      <main>
+        <section class="view active" id="operation-view" data-view-panel="operation">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Staff Dashboard</p>
+              <h1>หน้าควบคุมคิวห้องยา</h1>
+            </div>
+            <div class="role-badge">พนักงานห้องยา</div>
+          </div>
+
+          <div class="staff-summary">
+            <article class="summary-tile highlight">
+              <span>คิวปัจจุบัน</span>
+              <strong id="op-current-number">001</strong>
+              <small id="op-current-counter">ช่องรับยา 1</small>
+            </article>
+            <article class="summary-tile">
+              <span>จำนวนคิวทั้งหมดวันนี้</span>
+              <strong id="staff-total">600</strong>
+            </article>
+            <article class="summary-tile">
+              <span>รอเรียก</span>
+              <strong id="staff-waiting">599</strong>
+            </article>
+            <article class="summary-tile">
+              <span>คิวถัดไปตามลำดับ</span>
+              <strong id="staff-next">002</strong>
+            </article>
+            <article class="summary-tile">
+              <span>เรียกแล้ว</span>
+              <strong id="staff-called">1</strong>
+            </article>
+          </div>
+
+          <div class="operation-layout">
+            <section class="control-panel">
+              <div class="counter-select">
+                <span>ช่องรับบริการ</span>
+                <div class="counter-buttons" role="group" aria-label="ช่องรับบริการ">
+                  <button class="counter-button active" type="button" data-counter="ช่องรับยา 1">ช่องรับยา 1</button>
+                  <button class="counter-button" type="button" data-counter="ช่องรับยา 2">ช่องรับยา 2</button>
+                </div>
+              </div>
+
+              <div class="action-grid staff-actions">
+                <button class="action primary next-action" id="next-btn">เรียกคิวถัดไป</button>
+                <button class="action recall-action" id="recall-btn">เรียกซ้ำ</button>
+                <button class="action danger" id="skip-btn">ข้ามคิว</button>
+                <button class="action muted" id="complete-btn">รับยาแล้ว</button>
+              </div>
+              <p class="next-queue-note" id="next-queue-note">กดแล้วจะเรียกคิว 002</p>
+              <p class="cooldown-text" id="cooldown-text">พร้อมใช้งาน</p>
+
+              <div class="manual-call">
+                <div>
+                  <p class="eyebrow">Manual Call</p>
+                  <h2>เรียกคิวด้วยเลขที่ต้องการ</h2>
+                </div>
+                <form id="manual-form" class="manual-form">
+                  <input id="manual-queue-input" inputmode="numeric" maxlength="3" placeholder="เช่น 010 หรือ 150" />
+                  <button class="action primary" type="submit">เรียกคิวนี้</button>
+                </form>
+                <small id="manual-help">กรอกเลข 1-600 ระบบจะแปลงเป็นเลข 3 หลักอัตโนมัติ</small>
+              </div>
+
+              <button class="secondary-btn full-width" id="export-queue-btn">Export รายงานการเรียกคิว Excel</button>
+            </section>
+
+            <section class="history-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Missed Queues</p>
+                  <h2>คิวที่ถูกข้าม</h2>
+                </div>
+                <span id="history-count">0 รายการ</span>
+              </div>
+              <div class="history-list" id="op-history-list"></div>
+
+              <div class="completed-block">
+                <div class="panel-heading compact">
+                  <div>
+                    <p class="eyebrow">Completed</p>
+                    <h2>คิวที่รับยาแล้ว</h2>
+                  </div>
+                  <span id="completed-count">0 รายการ</span>
+                </div>
+                <div class="completed-list" id="completed-list"></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="tv-view" data-view-panel="tv">
+          <div class="tv-frame">
+            <div class="ticker">
+              <div class="ticker-track" id="tv-banner"></div>
+            </div>
+            <div class="tv-grid">
+              <section class="current-queue">
+                <p class="section-label">คิวปัจจุบัน</p>
+                <div class="queue-number" id="tv-current-number">001</div>
+                <div class="service-counter" id="tv-counter">ช่องรับยา 1</div>
+                <p class="last-updated" id="tv-last-updated">พร้อมให้บริการ</p>
+              </section>
+              <section class="missed-queue">
+                <div class="panel-heading">
+                  <p class="section-label">คิวที่ผ่านไปแล้ว</p>
+                  <span id="missed-count">0 รายการ</span>
+                </div>
+                <div class="missed-list" id="tv-missed-list"></div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="executive-view" data-view-panel="executive">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Executive Level</p>
+              <h1>Dashboard ภาพรวมรายวัน</h1>
+            </div>
+            <div class="dashboard-tools">
+              <input id="dashboard-date" type="date" />
+              <button class="secondary-btn" id="export-dashboard-btn">Export สรุป Excel</button>
+              <button class="secondary-btn" id="export-btn">Export รายงานคิว Excel</button>
+            </div>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric">
+              <span>จำนวนคิวที่เรียก</span>
+              <strong id="metric-total">0</strong>
+            </article>
+            <article class="metric">
+              <span>รับยาสำเร็จ</span>
+              <strong id="metric-complete">0</strong>
+            </article>
+            <article class="metric">
+              <span>ข้าม / ค้างระบบ</span>
+              <strong id="metric-skipped">0</strong>
+            </article>
+            <article class="metric">
+              <span>เวลารอเฉลี่ย</span>
+              <strong id="metric-wait">0 นาที</strong>
+            </article>
+          </div>
+
+          <section class="dashboard-band">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Actionable Insights</p>
+                <h2>สถานะการให้บริการ</h2>
+              </div>
+            </div>
+            <div class="bar-chart" id="bar-chart"></div>
+          </section>
+
+          <section class="dashboard-band banner-history">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Announcement</p>
+                <h2>ประกาศของวันที่เลือก</h2>
+              </div>
+            </div>
+            <div class="banner-summary" id="dashboard-banner"></div>
+          </section>
+        </section>
+
+        <section class="view" id="admin-view" data-view-panel="admin">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Admin Level</p>
+              <h1>ตั้งค่าระบบหลังบ้าน</h1>
+            </div>
+            <button class="secondary-btn" id="reset-btn">รีเซ็ตเดโม</button>
+          </div>
+
+          <div class="admin-grid">
+            <section class="admin-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Content Management</p>
+                  <h2>ข้อความประกาศบนทีวี</h2>
+                </div>
+              </div>
+              <textarea id="banner-input" rows="4"></textarea>
+              <button class="primary small" id="save-banner-btn">บันทึกข้อความ</button>
+            </section>
+
+            <section class="admin-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">User Management</p>
+                  <h2>สิทธิ์ผู้ใช้งาน</h2>
+                </div>
+              </div>
+              <div class="user-list" id="user-list"></div>
+            </section>
+
+            <section class="admin-panel wide">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Audit Logs</p>
+                  <h2>ประวัติการใช้งาน</h2>
+                </div>
+              </div>
+              <div class="audit-list" id="audit-list"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
