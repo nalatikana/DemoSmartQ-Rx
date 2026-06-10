@@ -543,13 +543,32 @@ function speakQueueAnnouncement(queue, counter) {
   window.speechSynthesis.cancel();
   window.speechSynthesis.resume();
 
-  const utterance = new SpeechSynthesisUtterance(message);
-  utterance.lang = "th-TH";
-  utterance.voice = getThaiVoice();
-  utterance.rate = 0.78;
-  utterance.pitch = 1;
-  utterance.volume = 1;
-  window.speechSynthesis.speak(utterance);
+  speakMessageTwice(message);
+}
+
+function speakMessageTwice(message) {
+  const thaiVoice = getThaiVoice();
+  let count = 0;
+
+  const speakRound = () => {
+    count += 1;
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.lang = "th-TH";
+    if (thaiVoice) {
+      utterance.voice = thaiVoice;
+    }
+    utterance.rate = 0.58;
+    utterance.pitch = 0.95;
+    utterance.volume = 1;
+    utterance.onend = () => {
+      if (count < 2) {
+        window.setTimeout(speakRound, 650);
+      }
+    };
+    window.speechSynthesis.speak(utterance);
+  };
+
+  speakRound();
 }
 
 function loadSpeechVoices() {
@@ -563,6 +582,8 @@ function getThaiVoice() {
   }
   return (
     speechVoices.find((voice) => voice.lang?.toLowerCase().startsWith("th")) ||
+    speechVoices.find((voice) => voice.name?.toLowerCase().includes("premwadee")) ||
+    speechVoices.find((voice) => voice.name?.toLowerCase().includes("thailand")) ||
     speechVoices.find((voice) => voice.name?.toLowerCase().includes("thai")) ||
     null
   );
