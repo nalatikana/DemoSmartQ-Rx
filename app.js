@@ -551,11 +551,10 @@ function speakQueueAnnouncement(queue, counter) {
 
 function speakMessageTwice(message) {
   const voice = getThaiVoice() || getFallbackVoice();
-  if (!voice) return;
   updateVoiceStatus(
-    getThaiVoices().length
+    voice && getThaiVoices().length
       ? `ใช้เสียงไทย: ${voice.name}`
-      : `ไม่พบเสียงไทย ใช้เสียงสำรอง: ${voice.name}`,
+      : `ไม่พบเสียงไทย ใช้เสียงสำรอง${voice ? `: ${voice.name}` : "ของ browser"}`,
     !getThaiVoices().length
   );
   let count = 0;
@@ -563,8 +562,10 @@ function speakMessageTwice(message) {
   const speakRound = () => {
     count += 1;
     const utterance = new SpeechSynthesisUtterance(message);
-    utterance.lang = voice.lang || "th-TH";
-    utterance.voice = voice;
+    utterance.lang = voice?.lang || "en-US";
+    if (voice) {
+      utterance.voice = voice;
+    }
     utterance.rate = 0.58;
     utterance.pitch = 0.95;
     utterance.volume = 1;
@@ -583,6 +584,12 @@ function loadSpeechVoices() {
   if (!("speechSynthesis" in window)) return;
   speechVoices = window.speechSynthesis.getVoices();
   renderVoiceOptions();
+}
+
+function loadSpeechVoicesWithRetry(attempt = 0) {
+  loadSpeechVoices();
+  if (speechVoices.length || attempt >= 8) return;
+  window.setTimeout(() => loadSpeechVoicesWithRetry(attempt + 1), 250);
 }
 
 function getThaiVoice() {
@@ -632,12 +639,12 @@ function renderVoiceOptions() {
 
   if (!thaiVoices.length) {
     const fallbackVoices = speechVoices;
-    els.voiceSelect.disabled = !fallbackVoices.length;
+    els.voiceSelect.disabled = false;
     els.voiceSelect.innerHTML = fallbackVoices.length
       ? fallbackVoices
           .map((voice) => `<option value="${escapeHtml(voice.voiceURI)}">${escapeHtml(voice.name)} (${escapeHtml(voice.lang)})</option>`)
           .join("")
-      : `<option value="">ไม่พบเสียงใน browser</option>`;
+      : `<option value="">ใช้เสียง default ของ browser</option>`;
     if (fallbackVoices.length) {
       localStorage.setItem(VOICE_KEY, fallbackVoices[0].voiceURI);
       els.voiceSelect.value = fallbackVoices[0].voiceURI;
@@ -946,8 +953,10 @@ els.recallBtn.addEventListener("click", () => {
 els.skipBtn.addEventListener("click", skipQueue);
 els.completeBtn.addEventListener("click", completeQueue);
 els.voiceTestBtn.addEventListener("click", () => {
-  loadSpeechVoices();
-  speakQueueAnnouncement(state.currentQueue, state.counter);
+  loadSpeechVoicesWithRetry();
+  window.setTimeout(() => {
+    speakQueueAnnouncement(state.currentQueue, state.counter);
+  }, 120);
 });
 els.voiceSelect.addEventListener("change", () => {
   localStorage.setItem(VOICE_KEY, els.voiceSelect.value);
@@ -997,7 +1006,7 @@ window.addEventListener("storage", (event) => {
 });
 
 if ("speechSynthesis" in window) {
-  loadSpeechVoices();
+  loadSpeechVoicesWithRetry();
   window.speechSynthesis.onvoiceschanged = loadSpeechVoices;
 }
 
