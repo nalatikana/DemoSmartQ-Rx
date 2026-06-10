@@ -509,6 +509,7 @@ function announce() {
     target.classList.add("flash");
   }
   playTone();
+  speakQueueAnnouncement(state.currentQueue, state.counter);
 }
 
 function getTvCounterElement(counter) {
@@ -529,6 +530,19 @@ function playTone() {
   gain.connect(audio.destination);
   oscillator.start();
   oscillator.stop(audio.currentTime + 0.45);
+}
+
+function speakQueueAnnouncement(queue, counter) {
+  if (!("speechSynthesis" in window)) return;
+
+  const message = `ขอเชิญลำดับที่ ${padQueue(queue)} ที่${counter}`;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(message);
+  utterance.lang = "th-TH";
+  utterance.rate = 0.82;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+  window.speechSynthesis.speak(utterance);
 }
 
 function startCooldown() {
