@@ -1,5 +1,6 @@
 const STORAGE_KEY = "pharmacy-queue-demo-state";
 const SESSION_KEY = "pharmacy-queue-demo-session";
+const VOICE_KEY = "pharmacy-queue-demo-thai-voice";
 const CHANNEL_NAME = "pharmacy-queue-demo-sync";
 const STATE_VERSION = 7;
 const MAX_QUEUE = 600;
@@ -100,6 +101,8 @@ const els = {
   skipBtn: document.querySelector("#skip-btn"),
   completeBtn: document.querySelector("#complete-btn"),
   voiceTestBtn: document.querySelector("#voice-test-btn"),
+  voiceSelect: document.querySelector("#voice-select"),
+  voiceStatus: document.querySelector("#voice-status"),
   nextQueueNote: document.querySelector("#next-queue-note"),
   cooldownText: document.querySelector("#cooldown-text"),
   manualForm: document.querySelector("#manual-form"),
@@ -548,15 +551,17 @@ function speakQueueAnnouncement(queue, counter) {
 
 function speakMessageTwice(message) {
   const thaiVoice = getThaiVoice();
+  if (!thaiVoice) {
+    updateVoiceStatus("ไม่พบเสียงไทยใน browser นี้ กรุณาติดตั้งเสียงภาษาไทยก่อน", true);
+    return;
+  }
   let count = 0;
 
   const speakRound = () => {
     count += 1;
     const utterance = new SpeechSynthesisUtterance(message);
     utterance.lang = "th-TH";
-    if (thaiVoice) {
-      utterance.voice = thaiVoice;
-    }
+    utterance.voice = thaiVoice;
     utterance.rate = 0.58;
     utterance.pitch = 0.95;
     utterance.volume = 1;
@@ -574,19 +579,61 @@ function speakMessageTwice(message) {
 function loadSpeechVoices() {
   if (!("speechSynthesis" in window)) return;
   speechVoices = window.speechSynthesis.getVoices();
+  renderVoiceOptions();
 }
 
 function getThaiVoice() {
   if (!speechVoices.length) {
     loadSpeechVoices();
   }
+  const selectedVoiceURI = localStorage.getItem(VOICE_KEY);
+  const thaiVoices = getThaiVoices();
   return (
-    speechVoices.find((voice) => voice.lang?.toLowerCase().startsWith("th")) ||
-    speechVoices.find((voice) => voice.name?.toLowerCase().includes("premwadee")) ||
-    speechVoices.find((voice) => voice.name?.toLowerCase().includes("thailand")) ||
-    speechVoices.find((voice) => voice.name?.toLowerCase().includes("thai")) ||
+    thaiVoices.find((voice) => voice.voiceURI === selectedVoiceURI) ||
+    thaiVoices.find((voice) => voice.name?.toLowerCase().includes("premwadee")) ||
+    thaiVoices[0] ||
     null
   );
+}
+
+function getThaiVoices() {
+  return speechVoices.filter((voice) => {
+    const lang = voice.lang?.toLowerCase() || "";
+    const name = voice.name?.toLowerCase() || "";
+    return (
+      lang.startsWith("th") ||
+      name.includes("premwadee") ||
+      name.includes("thai") ||
+      name.includes("thailand")
+    );
+  });
+}
+
+function renderVoiceOptions() {
+  if (!els.voiceSelect) return;
+  const thaiVoices = getThaiVoices();
+
+  if (!thaiVoices.length) {
+    els.voiceSelect.innerHTML = `<option value="">ไม่พบเสียงภาษาไทย</option>`;
+    els.voiceSelect.disabled = true;
+    updateVoiceStatus("ไม่พบเสียงไทย: ติดตั้ง Thai voice ใน Windows/Browser ก่อน", true);
+    return;
+  }
+
+  els.voiceSelect.disabled = false;
+  const selectedVoiceURI = localStorage.getItem(VOICE_KEY) || thaiVoices[0].voiceURI;
+  localStorage.setItem(VOICE_KEY, selectedVoiceURI);
+  els.voiceSelect.innerHTML = thaiVoices
+    .map((voice) => `<option value="${escapeHtml(voice.voiceURI)}">${escapeHtml(voice.name)} (${escapeHtml(voice.lang)})</option>`)
+    .join("");
+  els.voiceSelect.value = selectedVoiceURI;
+  updateVoiceStatus(`ใช้เสียงไทย: ${getThaiVoice()?.name || thaiVoices[0].name}`, false);
+}
+
+function updateVoiceStatus(message, isError) {
+  if (!els.voiceStatus) return;
+  els.voiceStatus.textContent = message;
+  els.voiceStatus.classList.toggle("voice-error", Boolean(isError));
 }
 
 function startCooldown() {
@@ -875,6 +922,10 @@ els.completeBtn.addEventListener("click", completeQueue);
 els.voiceTestBtn.addEventListener("click", () => {
   loadSpeechVoices();
   speakQueueAnnouncement(state.currentQueue, state.counter);
+});
+els.voiceSelect.addEventListener("change", () => {
+  localStorage.setItem(VOICE_KEY, els.voiceSelect.value);
+  updateVoiceStatus(`ใช้เสียงไทย: ${getThaiVoice()?.name || "ไม่พบเสียงไทย"}`, !getThaiVoice());
 });
 els.manualForm.addEventListener("submit", (event) => {
   event.preventDefault();
