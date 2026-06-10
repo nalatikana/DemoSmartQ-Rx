@@ -198,11 +198,20 @@
               </section>
 
               <section class="tv-called-board">
-                <div class="tv-called-head">
-                  <h2>คิวที่เรียกแล้ว</h2>
-                  <span id="missed-count">0 รายการ</span>
+                <div class="tv-called-row called-channel-one">
+                  <div class="tv-called-head">
+                    <h2>คิวที่เรียกแล้ว</h2>
+                    <span>ช่อง 1 | <b id="called-count-1">0</b> รายการ</span>
+                  </div>
+                  <div class="tv-called-grid" id="tv-called-grid-1"></div>
                 </div>
-                <div class="tv-called-grid" id="tv-called-grid"></div>
+                <div class="tv-called-row called-channel-two">
+                  <div class="tv-called-head">
+                    <h2>คิวที่เรียกแล้ว</h2>
+                    <span>ช่อง 2 | <b id="called-count-2">0</b> รายการ</span>
+                  </div>
+                  <div class="tv-called-grid" id="tv-called-grid-2"></div>
+                </div>
               </section>
             </div>
 
@@ -229,6 +238,11 @@
             </div>
             <div class="dashboard-tools">
               <input id="dashboard-date" type="date" />
+              <select id="dashboard-counter">
+                <option value="all">ทุกช่องรับยา</option>
+                <option value="ช่องรับยา 1">ช่องรับยา 1</option>
+                <option value="ช่องรับยา 2">ช่องรับยา 2</option>
+              </select>
               <button class="secondary-btn" id="export-dashboard-btn">Export สรุป Excel</button>
               <button class="secondary-btn" id="export-btn">Export รายงานคิว Excel</button>
             </div>
@@ -238,6 +252,14 @@
             <article class="metric">
               <span>จำนวนคิวที่เรียก</span>
               <strong id="metric-total">0</strong>
+            </article>
+            <article class="metric">
+              <span>ช่องรับยา 1</span>
+              <strong id="metric-counter-1">0</strong>
+            </article>
+            <article class="metric">
+              <span>ช่องรับยา 2</span>
+              <strong id="metric-counter-2">0</strong>
             </article>
             <article class="metric">
               <span>รับยาสำเร็จ</span>
