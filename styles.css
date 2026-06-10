@@ -690,9 +690,24 @@ h2 {
 
 .tv-called-board {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: 1fr 1fr;
   min-width: 0;
   background: #7fa4ee;
+}
+
+.tv-called-row {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+}
+
+.called-channel-one {
+  background: #7fa4ee;
+  border-bottom: 6px solid #e41828;
+}
+
+.called-channel-two {
+  background: #7ea6ed;
 }
 
 .tv-called-head {
@@ -731,6 +746,10 @@ h2 {
   background: #fff;
   font-size: clamp(28px, 3vw, 48px);
   font-weight: 800;
+}
+
+.tv-called-chip.empty-chip {
+  color: rgba(6, 26, 50, 0.45);
 }
 
 .tv-bottom {
@@ -823,9 +842,13 @@ h2 {
   width: 170px;
 }
 
+.dashboard-tools select {
+  width: 170px;
+}
+
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 18px;
   margin-bottom: 22px;
 }
@@ -919,7 +942,7 @@ h2 {
 @media (max-width: 1100px) {
   .staff-summary,
   .metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
