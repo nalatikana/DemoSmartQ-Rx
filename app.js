@@ -63,6 +63,7 @@ const channel = "BroadcastChannel" in window ? new BroadcastChannel(CHANNEL_NAME
 let state = loadState();
 let session = loadSession();
 let cooldownTimer = null;
+let speechVoices = [];
 
 const els = {
   loginScreen: document.querySelector("#login-screen"),
@@ -98,6 +99,7 @@ const els = {
   recallBtn: document.querySelector("#recall-btn"),
   skipBtn: document.querySelector("#skip-btn"),
   completeBtn: document.querySelector("#complete-btn"),
+  voiceTestBtn: document.querySelector("#voice-test-btn"),
   nextQueueNote: document.querySelector("#next-queue-note"),
   cooldownText: document.querySelector("#cooldown-text"),
   manualForm: document.querySelector("#manual-form"),
@@ -509,7 +511,9 @@ function announce() {
     target.classList.add("flash");
   }
   playTone();
-  speakQueueAnnouncement(state.currentQueue, state.counter);
+  window.setTimeout(() => {
+    speakQueueAnnouncement(state.currentQueue, state.counter);
+  }, 560);
 }
 
 function getTvCounterElement(counter) {
@@ -535,14 +539,33 @@ function playTone() {
 function speakQueueAnnouncement(queue, counter) {
   if (!("speechSynthesis" in window)) return;
 
-  const message = `ขอเชิญลำดับที่ ${padQueue(queue)} ที่${counter}`;
+  const message = `ขอเชิญ ลำดับที่ ${queue} ที่ ${counter}`;
   window.speechSynthesis.cancel();
+  window.speechSynthesis.resume();
+
   const utterance = new SpeechSynthesisUtterance(message);
   utterance.lang = "th-TH";
-  utterance.rate = 0.82;
+  utterance.voice = getThaiVoice();
+  utterance.rate = 0.78;
   utterance.pitch = 1;
   utterance.volume = 1;
   window.speechSynthesis.speak(utterance);
+}
+
+function loadSpeechVoices() {
+  if (!("speechSynthesis" in window)) return;
+  speechVoices = window.speechSynthesis.getVoices();
+}
+
+function getThaiVoice() {
+  if (!speechVoices.length) {
+    loadSpeechVoices();
+  }
+  return (
+    speechVoices.find((voice) => voice.lang?.toLowerCase().startsWith("th")) ||
+    speechVoices.find((voice) => voice.name?.toLowerCase().includes("thai")) ||
+    null
+  );
 }
 
 function startCooldown() {
@@ -828,6 +851,10 @@ els.recallBtn.addEventListener("click", () => {
 });
 els.skipBtn.addEventListener("click", skipQueue);
 els.completeBtn.addEventListener("click", completeQueue);
+els.voiceTestBtn.addEventListener("click", () => {
+  loadSpeechVoices();
+  speakQueueAnnouncement(state.currentQueue, state.counter);
+});
 els.manualForm.addEventListener("submit", (event) => {
   event.preventDefault();
   manualCall(els.manualQueueInput.value.trim());
@@ -870,6 +897,11 @@ window.addEventListener("storage", (event) => {
     render();
   }
 });
+
+if ("speechSynthesis" in window) {
+  loadSpeechVoices();
+  window.speechSynthesis.onvoiceschanged = loadSpeechVoices;
+}
 
 renderAuth();
 render();
