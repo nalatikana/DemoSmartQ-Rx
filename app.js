@@ -1,7 +1,7 @@
 const STORAGE_KEY = "pharmacy-queue-demo-state";
 const SESSION_KEY = "pharmacy-queue-demo-session";
 const CHANNEL_NAME = "pharmacy-queue-demo-sync";
-const STATE_VERSION = 4;
+const STATE_VERSION = 5;
 const MAX_QUEUE = 600;
 const COOLDOWN_SECONDS = 4;
 
@@ -22,6 +22,10 @@ const defaultState = {
   currentQueue: 1,
   nextQueueNumber: 2,
   counter: "ช่องรับยา 1",
+  counterQueues: {
+    "ช่องรับยา 1": 1,
+    "ช่องรับยา 2": null
+  },
   banner:
     "ประกาศ: กรุณาเตรียมบัตรประชาชนและใบสั่งยาให้พร้อมก่อนเข้ารับบริการ | ห้องยาขออภัยหากท่านรอนาน",
   skipped: [],
@@ -73,10 +77,13 @@ const els = {
   navItems: document.querySelectorAll(".nav-item"),
   panels: document.querySelectorAll("[data-view-panel]"),
   tvBanner: document.querySelector("#tv-banner"),
-  tvCurrentNumber: document.querySelector("#tv-current-number"),
-  tvCounter: document.querySelector("#tv-counter"),
+  tvDate: document.querySelector("#tv-date"),
+  tvTime: document.querySelector("#tv-time"),
+  tvCounter1: document.querySelector("#tv-counter-1"),
+  tvCounter2: document.querySelector("#tv-counter-2"),
+  tvCalledGrid: document.querySelector("#tv-called-grid"),
+  tvWaitingQueue: document.querySelector("#tv-waiting-queue"),
   tvLastUpdated: document.querySelector("#tv-last-updated"),
-  tvMissedList: document.querySelector("#tv-missed-list"),
   missedCount: document.querySelector("#missed-count"),
   opCurrentNumber: document.querySelector("#op-current-number"),
   opCurrentCounter: document.querySelector("#op-current-counter"),
@@ -236,10 +243,22 @@ function render() {
   const called = state.totalCalled || 0;
   const waiting = Math.max(MAX_QUEUE - (state.nextQueueNumber || 1) + 1, 0);
   const nextText = padQueue(state.nextQueueNumber || 1);
+  const now = new Date();
 
   els.tvBanner.textContent = state.banner;
-  els.tvCurrentNumber.textContent = queueText;
-  els.tvCounter.textContent = state.counter;
+  els.tvDate.textContent = new Intl.DateTimeFormat("th-TH", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(now);
+  els.tvTime.textContent = new Intl.DateTimeFormat("th-TH", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(now);
+  els.tvCounter1.textContent = formatTvQueue(state.counterQueues?.["ช่องรับยา 1"]);
+  els.tvCounter2.textContent = formatTvQueue(state.counterQueues?.["ช่องรับยา 2"]);
+  els.tvWaitingQueue.textContent = nextText;
   els.tvLastUpdated.textContent = `อัปเดตล่าสุด ${formatTime(state.lastUpdated)}`;
   els.opCurrentNumber.textContent = queueText;
   els.opCurrentCounter.textContent = state.counter;
@@ -266,22 +285,21 @@ function renderCounters() {
 }
 
 function renderMissed() {
-  els.missedCount.textContent = `${state.skipped.length} รายการ`;
-  els.tvMissedList.innerHTML = state.skipped.length
-    ? state.skipped.map((item) => missedItemTemplate(item)).join("")
-    : `<div class="empty">ยังไม่มีคิวที่ถูกข้าม</div>`;
+  const calledEvents = (state.events || [])
+    .filter((event) => isTvCalledEvent(event.type))
+    .slice(0, 42);
+  els.missedCount.textContent = `${calledEvents.length} รายการ`;
+  els.tvCalledGrid.innerHTML = calledEvents.length
+    ? calledEvents.map((event) => `<div class="tv-called-chip">${padQueue(event.queue)}</div>`).join("")
+    : `<div class="tv-called-chip">-</div>`;
 }
 
-function missedItemTemplate(item) {
-  return `
-    <div class="missed-item">
-      <div>
-        <strong>${padQueue(item.queue)}</strong>
-        <small>${item.counter}</small>
-      </div>
-      <small>${formatTime(item.time)}</small>
-    </div>
-  `;
+function formatTvQueue(queue) {
+  return queue ? padQueue(queue) : "-";
+}
+
+function isTvCalledEvent(type) {
+  return ["call", "manual_call", "recall", "recall_missed"].includes(type);
 }
 
 function renderHistory() {
@@ -460,10 +478,17 @@ function formatTime(value) {
 }
 
 function announce() {
-  els.tvCurrentNumber.classList.remove("flash");
-  void els.tvCurrentNumber.offsetWidth;
-  els.tvCurrentNumber.classList.add("flash");
+  const target = getTvCounterElement(state.counter);
+  if (target) {
+    target.classList.remove("flash");
+    void target.offsetWidth;
+    target.classList.add("flash");
+  }
   playTone();
+}
+
+function getTvCounterElement(counter) {
+  return counter === "ช่องรับยา 2" ? els.tvCounter2 : els.tvCounter1;
 }
 
 function playTone() {
@@ -503,6 +528,10 @@ function getNextSequentialQueue(queue) {
 
 function setCurrentQueue(queue, actionText, eventType = "call", advanceSequential = false) {
   state.currentQueue = queue;
+  state.counterQueues = {
+    ...(state.counterQueues || {}),
+    [state.counter]: queue
+  };
   state.highestQueue = Math.max(state.highestQueue || 1, queue);
   state.totalCalled += 1;
   if (advanceSequential) {
@@ -555,6 +584,10 @@ function completeQueue() {
 
   const next = state.nextQueueNumber || 1;
   state.currentQueue = next;
+  state.counterQueues = {
+    ...(state.counterQueues || {}),
+    [state.counter]: next
+  };
   state.highestQueue = Math.max(state.highestQueue || 1, next);
   state.totalCalled += 1;
   state.nextQueueNumber = getNextSequentialQueue(next);
@@ -585,6 +618,10 @@ function recallSkipped(queue) {
   if (!item) return;
   state.currentQueue = item.queue;
   state.counter = item.counter;
+  state.counterQueues = {
+    ...(state.counterQueues || {}),
+    [item.counter]: item.queue
+  };
   state.skipped = state.skipped.filter((skipped) => skipped.queue !== queue);
   state.totalCalled += 1;
   addEvent("recall_missed", queue, "เรียกย้อนหลัง", item.counter);
