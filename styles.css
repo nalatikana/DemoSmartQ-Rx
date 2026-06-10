@@ -486,6 +486,35 @@ h2 {
   margin-top: 18px;
 }
 
+.voice-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fbff;
+}
+
+.voice-panel label {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.voice-panel .full-width {
+  margin-top: 0;
+}
+
+.voice-panel small {
+  color: var(--muted);
+}
+
+.voice-panel small.voice-error {
+  color: var(--red);
+  font-weight: 600;
+}
+
 .panel-heading {
   display: flex;
   align-items: center;
