@@ -550,18 +550,21 @@ function speakQueueAnnouncement(queue, counter) {
 }
 
 function speakMessageTwice(message) {
-  const thaiVoice = getThaiVoice();
-  if (!thaiVoice) {
-    updateVoiceStatus("ไม่พบเสียงไทยใน browser นี้ กรุณาติดตั้งเสียงภาษาไทยก่อน", true);
-    return;
-  }
+  const voice = getThaiVoice() || getFallbackVoice();
+  if (!voice) return;
+  updateVoiceStatus(
+    getThaiVoices().length
+      ? `ใช้เสียงไทย: ${voice.name}`
+      : `ไม่พบเสียงไทย ใช้เสียงสำรอง: ${voice.name}`,
+    !getThaiVoices().length
+  );
   let count = 0;
 
   const speakRound = () => {
     count += 1;
     const utterance = new SpeechSynthesisUtterance(message);
-    utterance.lang = "th-TH";
-    utterance.voice = thaiVoice;
+    utterance.lang = voice.lang || "th-TH";
+    utterance.voice = voice;
     utterance.rate = 0.58;
     utterance.pitch = 0.95;
     utterance.volume = 1;
@@ -596,6 +599,20 @@ function getThaiVoice() {
   );
 }
 
+function getFallbackVoice() {
+  if (!speechVoices.length) {
+    loadSpeechVoices();
+  }
+  const selectedVoiceURI = localStorage.getItem(VOICE_KEY);
+  return (
+    speechVoices.find((voice) => voice.voiceURI === selectedVoiceURI) ||
+    speechVoices.find((voice) => voice.default) ||
+    speechVoices.find((voice) => voice.lang?.toLowerCase().startsWith("en")) ||
+    speechVoices[0] ||
+    null
+  );
+}
+
 function getThaiVoices() {
   return speechVoices.filter((voice) => {
     const lang = voice.lang?.toLowerCase() || "";
@@ -614,9 +631,18 @@ function renderVoiceOptions() {
   const thaiVoices = getThaiVoices();
 
   if (!thaiVoices.length) {
-    els.voiceSelect.innerHTML = `<option value="">ไม่พบเสียงภาษาไทย</option>`;
-    els.voiceSelect.disabled = true;
-    updateVoiceStatus("ไม่พบเสียงไทย: ติดตั้ง Thai voice ใน Windows/Browser ก่อน", true);
+    const fallbackVoices = speechVoices;
+    els.voiceSelect.disabled = !fallbackVoices.length;
+    els.voiceSelect.innerHTML = fallbackVoices.length
+      ? fallbackVoices
+          .map((voice) => `<option value="${escapeHtml(voice.voiceURI)}">${escapeHtml(voice.name)} (${escapeHtml(voice.lang)})</option>`)
+          .join("")
+      : `<option value="">ไม่พบเสียงใน browser</option>`;
+    if (fallbackVoices.length) {
+      localStorage.setItem(VOICE_KEY, fallbackVoices[0].voiceURI);
+      els.voiceSelect.value = fallbackVoices[0].voiceURI;
+    }
+    updateVoiceStatus("ไม่พบเสียงไทย: ใช้เสียงอังกฤษ/เสียงสำรองไปก่อน", true);
     return;
   }
 
