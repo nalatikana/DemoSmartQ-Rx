@@ -1,7 +1,7 @@
 const STORAGE_KEY = "pharmacy-queue-demo-state";
 const SESSION_KEY = "pharmacy-queue-demo-session";
 const CHANNEL_NAME = "pharmacy-queue-demo-sync";
-const STATE_VERSION = 5;
+const STATE_VERSION = 6;
 const MAX_QUEUE = 600;
 const COOLDOWN_SECONDS = 4;
 
@@ -81,10 +81,12 @@ const els = {
   tvTime: document.querySelector("#tv-time"),
   tvCounter1: document.querySelector("#tv-counter-1"),
   tvCounter2: document.querySelector("#tv-counter-2"),
-  tvCalledGrid: document.querySelector("#tv-called-grid"),
+  tvCalledGrid1: document.querySelector("#tv-called-grid-1"),
+  tvCalledGrid2: document.querySelector("#tv-called-grid-2"),
+  calledCount1: document.querySelector("#called-count-1"),
+  calledCount2: document.querySelector("#called-count-2"),
   tvWaitingQueue: document.querySelector("#tv-waiting-queue"),
   tvLastUpdated: document.querySelector("#tv-last-updated"),
-  missedCount: document.querySelector("#missed-count"),
   opCurrentNumber: document.querySelector("#op-current-number"),
   opCurrentCounter: document.querySelector("#op-current-counter"),
   staffTotal: document.querySelector("#staff-total"),
@@ -106,11 +108,14 @@ const els = {
   completedList: document.querySelector("#completed-list"),
   completedCount: document.querySelector("#completed-count"),
   metricTotal: document.querySelector("#metric-total"),
+  metricCounter1: document.querySelector("#metric-counter-1"),
+  metricCounter2: document.querySelector("#metric-counter-2"),
   metricComplete: document.querySelector("#metric-complete"),
   metricSkipped: document.querySelector("#metric-skipped"),
   metricWait: document.querySelector("#metric-wait"),
   barChart: document.querySelector("#bar-chart"),
   dashboardDate: document.querySelector("#dashboard-date"),
+  dashboardCounter: document.querySelector("#dashboard-counter"),
   dashboardBanner: document.querySelector("#dashboard-banner"),
   exportBtn: document.querySelector("#export-btn"),
   exportQueueBtn: document.querySelector("#export-queue-btn"),
@@ -285,13 +290,14 @@ function renderCounters() {
 }
 
 function renderMissed() {
-  const calledEvents = (state.events || [])
-    .filter((event) => isTvCalledEvent(event.type))
-    .slice(0, 42);
-  els.missedCount.textContent = `${calledEvents.length} รายการ`;
-  els.tvCalledGrid.innerHTML = calledEvents.length
-    ? calledEvents.map((event) => `<div class="tv-called-chip">${padQueue(event.queue)}</div>`).join("")
-    : `<div class="tv-called-chip">-</div>`;
+  const calledEvents = (state.events || []).filter((event) => isTvCalledEvent(event.type));
+  const channel1 = calledEvents.filter((event) => event.counter === "ช่องรับยา 1").slice(0, 28);
+  const channel2 = calledEvents.filter((event) => event.counter === "ช่องรับยา 2").slice(0, 28);
+
+  els.calledCount1.textContent = channel1.length;
+  els.calledCount2.textContent = channel2.length;
+  els.tvCalledGrid1.innerHTML = renderTvCalledChips(channel1);
+  els.tvCalledGrid2.innerHTML = renderTvCalledChips(channel2);
 }
 
 function formatTvQueue(queue) {
@@ -300,6 +306,12 @@ function formatTvQueue(queue) {
 
 function isTvCalledEvent(type) {
   return ["call", "manual_call", "recall", "recall_missed"].includes(type);
+}
+
+function renderTvCalledChips(events) {
+  return events.length
+    ? events.map((event) => `<div class="tv-called-chip">${padQueue(event.queue)}</div>`).join("")
+    : `<div class="tv-called-chip empty-chip">-</div>`;
 }
 
 function renderHistory() {
@@ -357,19 +369,25 @@ function renderCompleted() {
 
 function renderMetrics() {
   const selectedDate = getDashboardDate();
-  const events = getEventsForDate(selectedDate);
+  const events = getFilteredEventsForDashboard(selectedDate);
   const total = events.filter((event) => isCallEvent(event.type)).length;
   const skipped = events.filter((event) => event.type === "skip").length;
   const completed = events.filter((event) => event.type === "complete").length;
+  const counter1 = events.filter((event) => isCallEvent(event.type) && event.counter === "ช่องรับยา 1").length;
+  const counter2 = events.filter((event) => isCallEvent(event.type) && event.counter === "ช่องรับยา 2").length;
   const wait = total ? Math.max(3, Math.round((skipped * 2 + completed * 4) / total)) : 0;
 
   els.metricTotal.textContent = total;
+  els.metricCounter1.textContent = counter1;
+  els.metricCounter2.textContent = counter2;
   els.metricComplete.textContent = completed;
   els.metricSkipped.textContent = skipped;
   els.metricWait.textContent = `${wait} นาที`;
 
   const chartData = [
     ["คิวที่เรียก", total, varColor("--blue")],
+    ["ช่องรับยา 1", counter1, "#3e86f2"],
+    ["ช่องรับยา 2", counter2, "#7677ef"],
     ["รับยาสำเร็จ", completed, varColor("--green")],
     ["ข้าม / ค้าง", skipped, varColor("--amber")]
   ];
@@ -416,6 +434,12 @@ function getDashboardDate() {
 
 function getEventsForDate(date) {
   return (state.events || []).filter((event) => event.date === date);
+}
+
+function getFilteredEventsForDashboard(date) {
+  const counter = els.dashboardCounter.value || "all";
+  const events = getEventsForDate(date);
+  return counter === "all" ? events : events.filter((event) => event.counter === counter);
 }
 
 function isCallEvent(type) {
@@ -645,8 +669,12 @@ function manualCall(queueText) {
 
 function exportQueueReport() {
   const date = getDashboardDate();
-  const events = getEventsForDate(date);
+  const counter = els.dashboardCounter.value || "all";
+  const events = getFilteredEventsForDashboard(date);
   const rows = [
+    ["ตัวกรองวันที่", date],
+    ["ตัวกรองช่องรับยา", counter === "all" ? "ทุกช่องรับยา" : counter],
+    [],
     ["วันที่", "เวลา", "ประเภท", "เลขคิว", "ช่องรับยา", "ผู้ใช้งาน", "รายละเอียด"],
     ...events.map((event) => [
       event.date,
@@ -659,25 +687,31 @@ function exportQueueReport() {
     ])
   ];
   downloadExcel(`queue-call-report-${date}.xls`, "Queue Report", rows);
-  persist(`Export รายงานการเรียกคิว Excel วันที่ ${date}`);
+  persist(`Export รายงานการเรียกคิว Excel วันที่ ${date} (${counter === "all" ? "ทุกช่อง" : counter})`);
 }
 
 function exportDashboardSummary() {
   const date = getDashboardDate();
-  const events = getEventsForDate(date);
+  const counter = els.dashboardCounter.value || "all";
+  const events = getFilteredEventsForDashboard(date);
   const total = events.filter((event) => isCallEvent(event.type)).length;
   const skipped = events.filter((event) => event.type === "skip").length;
   const completed = events.filter((event) => event.type === "complete").length;
+  const counter1 = events.filter((event) => isCallEvent(event.type) && event.counter === "ช่องรับยา 1").length;
+  const counter2 = events.filter((event) => isCallEvent(event.type) && event.counter === "ช่องรับยา 2").length;
   const banners = (state.bannerHistory || []).filter((item) => item.date === date);
   const rows = [
     ["วันที่", date],
+    ["ตัวกรองช่องรับยา", counter === "all" ? "ทุกช่องรับยา" : counter],
     ["จำนวนคิวที่เรียก", total],
+    ["จำนวนคิวช่องรับยา 1", counter1],
+    ["จำนวนคิวช่องรับยา 2", counter2],
     ["รับยาแล้ว", completed],
     ["ข้ามคิว", skipped],
     ["ประกาศของวันนั้น", banners.map((item) => item.banner).join(" | ") || "-"]
   ];
   downloadExcel(`dashboard-summary-${date}.xls`, "Dashboard Summary", rows);
-  persist(`Export สรุป Dashboard Excel วันที่ ${date}`);
+  persist(`Export สรุป Dashboard Excel วันที่ ${date} (${counter === "all" ? "ทุกช่อง" : counter})`);
 }
 
 function downloadExcel(filename, sheetName, rows) {
@@ -790,6 +824,9 @@ els.exportDashboardBtn.addEventListener("click", exportDashboardSummary);
 els.dashboardDate.addEventListener("change", () => {
   renderMetrics();
   renderDashboardBanner();
+});
+els.dashboardCounter.addEventListener("change", () => {
+  renderMetrics();
 });
 els.saveBannerBtn.addEventListener("click", () => {
   state.banner = els.bannerInput.value.trim() || defaultState.banner;
