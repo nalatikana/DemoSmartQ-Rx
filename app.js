@@ -1,7 +1,7 @@
 const STORAGE_KEY = "pharmacy-queue-demo-state";
 const SESSION_KEY = "pharmacy-queue-demo-session";
 const CHANNEL_NAME = "pharmacy-queue-demo-sync";
-const STATE_VERSION = 6;
+const STATE_VERSION = 7;
 const MAX_QUEUE = 600;
 const COOLDOWN_SECONDS = 4;
 
@@ -311,7 +311,7 @@ function isTvCalledEvent(type) {
 function renderTvCalledChips(events) {
   return events.length
     ? events.map((event) => `<div class="tv-called-chip">${padQueue(event.queue)}</div>`).join("")
-    : `<div class="tv-called-chip empty-chip">-</div>`;
+    : `<div class="tv-called-empty">ยังไม่มีคิวที่เรียกแล้ว</div>`;
 }
 
 function renderHistory() {
