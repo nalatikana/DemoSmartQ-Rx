@@ -175,23 +175,48 @@
 
         <section class="view" id="tv-view" data-view-panel="tv">
           <div class="tv-frame">
-            <div class="ticker">
-              <div class="ticker-track" id="tv-banner"></div>
+            <div class="tv-topbar">
+              <strong>ระบบเรียกคิวห้องยา</strong>
+              <span id="tv-date">-</span>
+              <span id="tv-time">-</span>
             </div>
-            <div class="tv-grid">
-              <section class="current-queue">
-                <p class="section-label">คิวปัจจุบัน</p>
-                <div class="queue-number" id="tv-current-number">001</div>
-                <div class="service-counter" id="tv-counter">ช่องรับยา 1</div>
-                <p class="last-updated" id="tv-last-updated">พร้อมให้บริการ</p>
+
+            <div class="tv-board">
+              <section class="tv-service-board">
+                <div class="tv-board-heading">
+                  <span>ช่องบริการ</span>
+                  <span>หมายเลขคิว</span>
+                </div>
+                <div class="tv-service-row channel-one">
+                  <div class="tv-channel-number">1</div>
+                  <div class="tv-channel-queue" id="tv-counter-1">001</div>
+                </div>
+                <div class="tv-service-row channel-two">
+                  <div class="tv-channel-number">2</div>
+                  <div class="tv-channel-queue" id="tv-counter-2">-</div>
+                </div>
               </section>
-              <section class="missed-queue">
-                <div class="panel-heading">
-                  <p class="section-label">คิวที่ผ่านไปแล้ว</p>
+
+              <section class="tv-called-board">
+                <div class="tv-called-head">
+                  <h2>คิวที่เรียกแล้ว</h2>
                   <span id="missed-count">0 รายการ</span>
                 </div>
-                <div class="missed-list" id="tv-missed-list"></div>
+                <div class="tv-called-grid" id="tv-called-grid"></div>
               </section>
+            </div>
+
+            <div class="tv-bottom">
+              <div class="tv-waiting">
+                <span>คิวที่รอรับบริการ</span>
+                <strong id="tv-waiting-queue">002</strong>
+              </div>
+              <div class="ticker">
+                <div class="ticker-track" id="tv-banner"></div>
+              </div>
+              <div class="tv-status-box">
+                <small id="tv-last-updated">พร้อมให้บริการ</small>
+              </div>
             </div>
           </div>
         </section>
